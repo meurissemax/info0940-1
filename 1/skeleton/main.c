@@ -13,7 +13,7 @@ Member2: ID - LastName - FirstName
 /*
 Important:
     1. DO NOT MODIFY the given skeleton. Nevertheless, if it is easier for you, 
-you can wrap existing code within conditions (if/else, switch).
+you can (only) wrap existing code within conditions (if/else, switch).
     2. Since I'm the TA, I can use static allocation. But you are a student, so
 you MUST use dynamic allocation for your data structures. It is an Operating 
 Systems course after all...

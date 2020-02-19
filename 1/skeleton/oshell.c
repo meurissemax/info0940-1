@@ -23,7 +23,7 @@ void parseCmdLine(char* line, char** arguments) {
     
     line[strlen(line) - 1] = '\0';
     arguments[i] = strtok(line, " ");
-    while (arguments[i++] && i < (int) sizeof(arguments)) {
+    while (arguments[i++] && i < MAX_ARGS) {
         arguments[i] = strtok(NULL, " ");
     }
 }
