@@ -101,3 +101,45 @@ void cd_cmd(char** arguments) {
             fprintf(stderr, "Unknown subdirectory, or unable to open it.\n");
     }
 }
+
+/* -----------------------------------------------------------------------------
+ * Implements the 'showlist' command.
+ *
+ * PARAMETERS
+ * arguments    represents an array of string which contains the command ([0]) 
+ *              and its arguments ([1], [2], ... [255]).
+ *
+ * RETURN
+ * /
+ * ---------------------------------------------------------------------------*/
+void showlist_cmd(char** arguments) {
+    printf('showlist cmd - TO DO\n');
+}
+
+/* -----------------------------------------------------------------------------
+ * Implements the 'memdump' command.
+ *
+ * PARAMETERS
+ * arguments    represents an array of string which contains the command ([0]) 
+ *              and its arguments ([1], [2], ... [255]).
+ *
+ * RETURN
+ * /
+ * ---------------------------------------------------------------------------*/
+void memdump_cmd(char** arguments) {
+    printf('memdump cmd - TO DO\n');
+}
+
+/* -----------------------------------------------------------------------------
+ * Implements the 'loadmem' command.
+ *
+ * PARAMETERS
+ * arguments    represents an array of string which contains the command ([0]) 
+ *              and its arguments ([1], [2], ... [255]).
+ *
+ * RETURN
+ * /
+ * ---------------------------------------------------------------------------*/
+void loadmem_cmd(char** arguments) {
+    printf('loadmem cmd - TO DO\n');
+}

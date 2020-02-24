@@ -71,7 +71,31 @@ int main() {
         else if(strcmp(arguments[0], "cd") == 0) {
             cd_cmd(arguments);
 
-            // Don't pass through multiple copies.
+            // Don't pass through multiple copies
+            continue;
+        }
+
+        // 'showlist' cmd
+        else if(strcmp(arguments[0], "showlist") == 0) {
+            showlist_cmd(arguments);
+
+            // Don't pass through multiple copies
+            continue;
+        }
+
+        // 'memdump' cmd
+        else if(strcmp(arguments[0], "memdump") == 0) {
+            memdump_cmd(arguments);
+
+            // Don't pass through multiple copies
+            continue;
+        }
+
+        // 'loadmem' cmd
+        else if(strcmp(arguments[0], "loadmem") == 0) {
+            loadmem_cmd(arguments);
+
+            // Don't pass through multiple copies
             continue;
         }
 

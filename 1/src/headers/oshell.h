@@ -39,6 +39,10 @@ static const int MAX_ARGS = 256;
 char readCharInput(void);
 void parseCmdLine(char* line, char** arguments);
 
+// Built-in commands
 void cd_cmd(char** arguments);
+void showlist_cmd(char** arguments);
+void memdump_cmd(char** arguments);
+void loadmem_cmd(char** arguments);
 
 #endif
