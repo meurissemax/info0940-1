@@ -4,7 +4,7 @@ Projects realized as part of the *Operating systems* course given by Professor *
 
 ## Language
 
-* **C++**
+* **C**
 
 ## Authors
 
