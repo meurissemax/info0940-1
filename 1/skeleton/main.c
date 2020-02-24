@@ -8,6 +8,7 @@ Member2: ID - LastName - FirstName
 #include <ctype.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <unistd.h>
 #include "oshell.h"
 
 /*
@@ -37,6 +38,43 @@ int main() {
         parseCmdLine(line, arguments);
         
         // Add some stuff here ...
+
+        // Exit the shell
+        if(strcmp(arguments[0], "exit") == 0){
+            if(arguments[1] != NULL)
+                fprintf(stderr, "Arguments passed after the exit command have been discarded.\n");
+            exit(0); // Can we use exit ? execvp does not work.
+        }
+
+        // Is it supposed to print something ? We do not do anything related to the directory...
+        else if(strcmp(arguments[0], "cd") == 0){
+            // Go to home directory
+            if(arguments[1] == NULL || strcmp(arguments[1], "~") == 0){
+                chdir(getenv("HOME"));
+            }
+            // Go up a directory
+            else if(strcmp(arguments[1], "..") == 0){
+                chdir("..");
+                char s[100];
+                printf("%s\n", getcwd(s, 100)); 
+            }
+            // Go in a particular directory
+            else if ((char) arguments[1][0] == '/'){
+                int v = chdir(arguments[1]);
+                if(v != 0)
+                    fprintf(stderr, "Unknown directory, or unable to open it.\n"); // Maybe make it more explicit, differentiate the cases.
+            }
+            // Go in a subdirectory
+            else{
+                int v = chdir(arguments[1]);
+                if(v != 0)
+                    fprintf(stderr, "Unknown subdirectory, or unable to open it.\n"); // Maybe make it more explicit, differentiate the cases.
+            }
+            // Don't pass through multiple copies.
+            continue;
+        }
+
+
         
         // Number of times to execute a specific command
         do {
@@ -51,6 +89,12 @@ int main() {
         }
         
         // Add another stuff here ...
+
+        // Show list command.
+        if(strcmp(arguments[0], "showlist") == 0){
+
+        }
+
         
     }while(true);
 }
