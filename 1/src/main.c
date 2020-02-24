@@ -130,7 +130,7 @@ int main() {
 
             // Parallel executions
             else {
-                // to do
+                exec_mult(arguments, copies);
             }
         }
     } while(true);

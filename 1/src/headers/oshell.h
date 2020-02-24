@@ -47,5 +47,6 @@ void loadmem_cmd(char** arguments);
 
 // Non built-in functions
 void exec_once(char** arguments);
+void exec_mult(char** arguments, int number);
 
 #endif

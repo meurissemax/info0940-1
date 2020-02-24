@@ -149,7 +149,7 @@ void loadmem_cmd(char** arguments) {
 /* Non built-in commands */
 
 /* -----------------------------------------------------------------------------
- * Implements the execution of a non built-in command with using
+ * Implements the execution of a non built-in command using
  * fork() and execvp().
  *
  * PARAMETERS
@@ -179,5 +179,44 @@ void exec_once(char** arguments) {
     else {
         // Wait for child
         wait(NULL);
+    }
+}
+
+/* -----------------------------------------------------------------------------
+ * Implements the multiple parallelized execution of a non built-in
+ * command using fork() and execvp().
+ *
+ * PARAMETERS
+ * number       represents the number of parallelized execution
+ * arguments    represents an array of string which contains the command ([0]) 
+ *              and its arguments ([1], [2], ... [255]).
+ *
+ * RETURN
+ * /
+ * ---------------------------------------------------------------------------*/
+void exec_mult(char** arguments, int number) {
+    // Create the child processes
+    for(int i = 0; i < number; i++) {
+        pid_t pid = fork();
+
+        // If work has failed
+        if(pid < 0) {
+            perror("Fork has failed.\n");
+        }
+
+        // If we are in the child process
+        else if(pid == 0) {
+            // Execute the command
+            if(execvp(arguments[0], arguments) < 0) {
+                perror("Execution of the command has failed.\n");
+            }
+        }
+    }
+
+    // Parent process waits for child processes
+    while(number > 0) {
+        pid_t pid = wait(NULL);
+
+        number--;
     }
 }
