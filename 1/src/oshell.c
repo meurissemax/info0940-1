@@ -90,7 +90,7 @@ void cd_cmd(char** arguments) {
         int v = chdir(arguments[1]);
 
         if(v != 0)
-            fprintf(stderr, "Unknown directory, or unable to open it.\n");
+            perror("Unknown directory, or unable to open it.\n");
     }
 
     // Go in a subdirectory
@@ -98,7 +98,7 @@ void cd_cmd(char** arguments) {
         int v = chdir(arguments[1]);
 
         if(v != 0)
-            fprintf(stderr, "Unknown subdirectory, or unable to open it.\n");
+            perror("Unknown subdirectory, or unable to open it.\n");
     }
 }
 
@@ -113,7 +113,7 @@ void cd_cmd(char** arguments) {
  * /
  * ---------------------------------------------------------------------------*/
 void showlist_cmd(char** arguments) {
-    printf('showlist cmd - TO DO\n');
+    printf("showlist cmd - TO DO\n");
 }
 
 /* -----------------------------------------------------------------------------
@@ -127,7 +127,7 @@ void showlist_cmd(char** arguments) {
  * /
  * ---------------------------------------------------------------------------*/
 void memdump_cmd(char** arguments) {
-    printf('memdump cmd - TO DO\n');
+    printf("memdump cmd - TO DO\n");
 }
 
 /* -----------------------------------------------------------------------------
@@ -141,5 +141,5 @@ void memdump_cmd(char** arguments) {
  * /
  * ---------------------------------------------------------------------------*/
 void loadmem_cmd(char** arguments) {
-    printf('loadmem cmd - TO DO\n');
+    printf("loadmem cmd - TO DO\n");
 }
