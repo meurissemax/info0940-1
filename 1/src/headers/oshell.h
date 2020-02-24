@@ -45,4 +45,7 @@ void showlist_cmd(char** arguments);
 void memdump_cmd(char** arguments);
 void loadmem_cmd(char** arguments);
 
+// Non built-in functions
+void exec_once(char** arguments);
+
 #endif

@@ -60,6 +60,8 @@ char readCharInput(void) {
 	return c;
 }
 
+/* Built-in commands */
+
 /* -----------------------------------------------------------------------------
  * Implements the 'cd' command.
  *
@@ -142,4 +144,40 @@ void memdump_cmd(char** arguments) {
  * ---------------------------------------------------------------------------*/
 void loadmem_cmd(char** arguments) {
     printf("loadmem cmd - TO DO\n");
+}
+
+/* Non built-in commands */
+
+/* -----------------------------------------------------------------------------
+ * Implements the execution of a non built-in command with using
+ * fork() and execvp().
+ *
+ * PARAMETERS
+ * arguments    represents an array of string which contains the command ([0]) 
+ *              and its arguments ([1], [2], ... [255]).
+ *
+ * RETURN
+ * /
+ * ---------------------------------------------------------------------------*/
+void exec_once(char** arguments) {
+    pid_t pid = fork();
+
+    // If work has failed
+    if(pid < 0) {
+        perror("Fork has failed.\n");
+    }
+
+    // If we are in the child process
+    else if(pid == 0) {
+        // Execute the command
+        if(execvp(arguments[0], arguments) < 0) {
+            perror("Execution of the command has failed.\n");
+        }
+    }
+
+    // If we are in the parent process
+    else {
+        // Wait for child
+        wait(NULL);
+    }
 }

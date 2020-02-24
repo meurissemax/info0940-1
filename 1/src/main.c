@@ -112,26 +112,7 @@ int main() {
 
         /* Only once execution */
         if(copies == 1) {
-            pid_t pid = fork();
-
-            // If work has failed
-            if(pid < 0) {
-                perror("Fork has failed.\n");
-            }
-
-            // If we are in the child process
-            else if(pid == 0) {
-                // Execute the command
-                if(execvp(arguments[0], arguments) < 0) {
-                    perror("Execution of the command has failed.\n");
-                }
-            }
-
-            // If we are in the parent process
-            else {
-                // Wait for child
-                wait(NULL);
-            }
+            exec_once(arguments);
         }
 
         /* For multiple executions */
@@ -139,6 +120,18 @@ int main() {
             printf("\t[S]equential (default) or [P]arallelize> ");
 
             parallel = (toupper(readCharInput()) == 'P') ? true : false;
+
+            // Sequential executions
+            if(!parallel) {
+                for(int i = 0; i < copies; i++) {
+                    exec_once(arguments);
+                }
+            }
+
+            // Parallel executions
+            else {
+                // to do
+            }
         }
     } while(true);
 }
