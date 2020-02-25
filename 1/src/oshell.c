@@ -104,34 +104,6 @@ void cd_cmd(char** arguments) {
     }
 }
 
-/* -----------------------------------------------------------------------------
- * Implements the 'memdump' command.
- *
- * PARAMETERS
- * arguments    represents an array of string which contains the command ([0]) 
- *              and its arguments ([1], [2], ... [255]).
- *
- * RETURN
- * /
- * ---------------------------------------------------------------------------*/
-void memdump_cmd(char** arguments) {
-    printf("%s cmd - TO DO\n", arguments[0]);
-}
-
-/* -----------------------------------------------------------------------------
- * Implements the 'loadmem' command.
- *
- * PARAMETERS
- * arguments    represents an array of string which contains the command ([0]) 
- *              and its arguments ([1], [2], ... [255]).
- *
- * RETURN
- * /
- * ---------------------------------------------------------------------------*/
-void loadmem_cmd(char** arguments) {
-    printf("%s cmd - TO DO\n", arguments[0]);
-}
-
 /* Non built-in commands */
 
 /* -----------------------------------------------------------------------------
@@ -185,7 +157,7 @@ void exec_once(char** arguments, vector* v) {
  * RETURN
  * /
  * ---------------------------------------------------------------------------*/
-void exec_mult(char** arguments, int number) {
+void exec_mult(char** arguments, int number, vector* v) {
     // Create the child processes
     for(int i = 0; i < number; i++) {
         pid_t pid = fork();
@@ -206,7 +178,13 @@ void exec_mult(char** arguments, int number) {
 
     // Parent process waits for child processes
     while(number > 0) {
-        wait(NULL);
+        int status;
+
+        // Wait for child
+        pid_t pid = wait(&status);
+
+        // Add command to history
+        vector_add(v, arguments[0], pid, status);
 
         number--;
     }

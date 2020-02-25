@@ -34,7 +34,7 @@ typedef struct item {
 } item;
 
 typedef struct vector {
-	item **items;
+	item** items;
 	int capacity;
 	int total;
 } vector;
@@ -48,6 +48,8 @@ vector* vector_init(void);
 void vector_resize(vector* v, int capacity);
 void vector_add(vector* v, char* command, pid_t pid, int exit_code);
 void vector_print(vector* v);
+vector* vector_export(vector* v);
+vector* vector_import(vector* v);
 void vector_free(vector *v);
 
 #endif

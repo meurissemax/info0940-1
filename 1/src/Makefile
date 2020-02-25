@@ -19,4 +19,5 @@ all :
 # To clean the workspace
 clean :
 	rm -f oshell
+	rm -f memdump.bin
 	rm -f -r oshell.dSYM

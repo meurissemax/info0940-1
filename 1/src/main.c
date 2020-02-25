@@ -90,7 +90,7 @@ int main() {
 
         /* 'memdump' cmd */
         else if(strcmp(arguments[0], "memdump") == 0) {
-            memdump_cmd(arguments);
+            v = vector_export(v);
 
             // Don't pass through multiple copies
             continue;
@@ -98,7 +98,7 @@ int main() {
 
         /* 'loadmem' cmd */
         else if(strcmp(arguments[0], "loadmem") == 0) {
-            loadmem_cmd(arguments);
+            v = vector_import(v);
 
             // Don't pass through multiple copies
             continue;
@@ -135,7 +135,7 @@ int main() {
 
             // Parallel executions
             else {
-                exec_mult(arguments, copies);
+                exec_mult(arguments, copies, v);
             }
         }
     } while(true);

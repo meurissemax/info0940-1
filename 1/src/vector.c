@@ -72,9 +72,7 @@ void vector_add(vector* v, char* command, pid_t pid, int exit_code) {
 }
 
 void vector_print(vector* v) {
-	if(v->total == 0) {
-		printf("List is empty.\n");
-	} else {
+	if(v->total > 0) {
 		for(int i = 0; i < v->total; i++) {
 			item* e = v->items[i];
 
@@ -87,6 +85,71 @@ void vector_print(vector* v) {
 			}
 		}
 	}
+}
+
+vector* vector_export(vector* v) {
+	FILE* fptr;
+
+	if((fptr = fopen("memdump.bin", "wb")) == NULL) {
+		perror("Unable to export vector in a binary file.");
+	}
+
+	fwrite(&v->total, sizeof(int), 1, fptr);
+
+	for(int i = 0; i < v->total; i++) {
+		int char_length = strlen(v->items[i]->command);
+
+		fwrite(&char_length, sizeof(int), 1, fptr);
+		fwrite(v->items[i]->command, sizeof(char), char_length + 1, fptr);
+
+		fwrite(&v->items[i]->pid, sizeof(pid_t), 1, fptr);
+		fwrite(&v->items[i]->exit_code, sizeof(int), 1, fptr);
+	}
+
+	fclose(fptr);
+
+	vector_free(v);
+
+	return vector_init();
+}
+
+vector* vector_import(vector* v) {
+	vector_free(v);
+
+	vector* imported_v = vector_init();
+
+	FILE* fptr;
+
+	if((fptr = fopen("memdump.bin", "rb")) == NULL) {
+		perror("Unable to import vector from a binary file.");
+	}
+
+	int nb_items = 0;
+
+	fread(&nb_items, sizeof(int), 1, fptr);
+
+	for(int i = 0; i < nb_items; i++) {
+		int char_length = 0;
+
+		pid_t pid;
+		int exit_code;
+
+		char* command = malloc(sizeof(char) * char_length);
+
+		fread(&char_length, sizeof(int), 1, fptr);
+		fread(command, sizeof(char), char_length + 1, fptr);
+
+		fread(&pid, sizeof(pid_t), 1, fptr);
+		fread(&exit_code, sizeof(int), 1, fptr);
+
+		vector_add(imported_v, command, pid, exit_code);
+
+		free(command);
+	}
+
+	fclose(fptr);
+
+	return imported_v;
 }
 
 void vector_free(vector* v) {
