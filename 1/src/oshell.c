@@ -153,21 +153,23 @@ void exec_once(char** arguments, vector* v) {
         perror("Fork has failed.\n");
     }
 
+    // If we are in the parent process
+    else if(pid > 0) {
+        int status;
+
+        // Wait for child
+        wait(&status);
+
+        // Add command to history
+        vector_add(v, arguments[0], pid, status);
+    }
+
     // If we are in the child process
-    else if(pid == 0) {
+    else {
         // Execute the command
         if(execvp(arguments[0], arguments) < 0) {
             perror("Execution of the command has failed.\n");
         }
-    }
-
-    // If we are in the parent process
-    else {
-        // Wait for child
-        wait(NULL);
-
-        // Add command to history
-        vector_add(v, arguments[0], pid, 0);
     }
 }
 

@@ -17,6 +17,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "headers/vector.h"
 
@@ -60,7 +61,10 @@ void vector_add(vector* v, char* command, pid_t pid, int exit_code) {
 		exit(1);
 	}
 
-	i->command = command;
+	char* cmd_str = malloc(sizeof(char) * strlen(command));
+	strcpy(cmd_str, command);
+
+	i->command = cmd_str;
 	i->pid = pid;
 	i->exit_code = exit_code;
 
@@ -87,6 +91,7 @@ void vector_print(vector* v) {
 
 void vector_free(vector* v) {
 	for(int i = 0; i < v->total; i++) {
+		free(v->items[i]->command);
 		free(v->items[i]);
 	}
 
