@@ -21,6 +21,8 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "vector.h"
+
 
 /*******************/
 /* Constant values */
@@ -41,12 +43,11 @@ void parseCmdLine(char* line, char** arguments);
 
 // Built-in commands
 void cd_cmd(char** arguments);
-void showlist_cmd(char** arguments);
 void memdump_cmd(char** arguments);
 void loadmem_cmd(char** arguments);
 
 // Non built-in functions
-void exec_once(char** arguments);
+void exec_once(char** arguments, vector* v);
 void exec_mult(char** arguments, int number);
 
 #endif

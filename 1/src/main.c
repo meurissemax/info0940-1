@@ -19,6 +19,7 @@
 #include <unistd.h>
 
 #include "headers/oshell.h"
+#include "headers/vector.h"
 
 
 /********/
@@ -35,6 +36,8 @@ int main() {
 
     int copies;
     int parallel = false;
+
+    vector* v = vector_init();
 
     /*************/
     /* Main loop */
@@ -64,6 +67,8 @@ int main() {
             if(arguments[1] != NULL)
                 perror("Arguments passed after the exit command have been discarded.\n");
 
+            vector_free(v);
+
             exit(0);
         }
 
@@ -77,7 +82,7 @@ int main() {
 
         /* 'showlist' cmd */
         else if(strcmp(arguments[0], "showlist") == 0) {
-            showlist_cmd(arguments);
+            vector_print(v);
 
             // Don't pass through multiple copies
             continue;
@@ -112,7 +117,7 @@ int main() {
 
         /* Only once execution */
         if(copies == 1) {
-            exec_once(arguments);
+            exec_once(arguments, v);
         }
 
         /* For multiple executions */
@@ -124,7 +129,7 @@ int main() {
             // Sequential executions
             if(!parallel) {
                 for(int i = 0; i < copies; i++) {
-                    exec_once(arguments);
+                    exec_once(arguments, v);
                 }
             }
 

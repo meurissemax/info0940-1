@@ -6,13 +6,15 @@
 # 20161278 - MEURISSE Maxime
 # 20162864 - VERMEYLEN Valentin
 
-CC=gcc
-CFLAGS=-g --pedantic -Wall -Wextra -Wmissing-prototypes -std=c99
-PROGRAM=oshell
+CC = gcc
+CFLAGS = -g --pedantic -Wall -Wextra -Wmissing-prototypes -std=c99
+PROGRAM = oshell
+
+FILES = main.c oshell.c vector.c
 
 # To compile the project
 all : 
-	$(CC) main.c oshell.c $(CFLAGS) -o $(PROGRAM)
+	$(CC) $(FILES) $(CFLAGS) -o $(PROGRAM)
 
 # To clean the workspace
 clean :

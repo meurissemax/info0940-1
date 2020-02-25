@@ -105,20 +105,6 @@ void cd_cmd(char** arguments) {
 }
 
 /* -----------------------------------------------------------------------------
- * Implements the 'showlist' command.
- *
- * PARAMETERS
- * arguments    represents an array of string which contains the command ([0]) 
- *              and its arguments ([1], [2], ... [255]).
- *
- * RETURN
- * /
- * ---------------------------------------------------------------------------*/
-void showlist_cmd(char** arguments) {
-    printf("showlist cmd - TO DO\n");
-}
-
-/* -----------------------------------------------------------------------------
  * Implements the 'memdump' command.
  *
  * PARAMETERS
@@ -129,7 +115,7 @@ void showlist_cmd(char** arguments) {
  * /
  * ---------------------------------------------------------------------------*/
 void memdump_cmd(char** arguments) {
-    printf("memdump cmd - TO DO\n");
+    printf("%s cmd - TO DO\n", arguments[0]);
 }
 
 /* -----------------------------------------------------------------------------
@@ -143,7 +129,7 @@ void memdump_cmd(char** arguments) {
  * /
  * ---------------------------------------------------------------------------*/
 void loadmem_cmd(char** arguments) {
-    printf("loadmem cmd - TO DO\n");
+    printf("%s cmd - TO DO\n", arguments[0]);
 }
 
 /* Non built-in commands */
@@ -159,7 +145,7 @@ void loadmem_cmd(char** arguments) {
  * RETURN
  * /
  * ---------------------------------------------------------------------------*/
-void exec_once(char** arguments) {
+void exec_once(char** arguments, vector* v) {
     pid_t pid = fork();
 
     // If work has failed
@@ -179,6 +165,9 @@ void exec_once(char** arguments) {
     else {
         // Wait for child
         wait(NULL);
+
+        // Add command to history
+        vector_add(v, arguments[0], pid, 0);
     }
 }
 
@@ -215,7 +204,7 @@ void exec_mult(char** arguments, int number) {
 
     // Parent process waits for child processes
     while(number > 0) {
-        pid_t pid = wait(NULL);
+        wait(NULL);
 
         number--;
     }
