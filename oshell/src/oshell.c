@@ -12,6 +12,12 @@
 /* Headers */
 /***********/
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/types.h>
+
 #include "headers/oshell.h"
 
 
@@ -19,18 +25,6 @@
 /* Functions */
 /*************/
 
-/* -----------------------------------------------------------------------------
- * Parse a command line into arguments.
- * /!\ DO NOT MODIFY /!\
- *
- * PARAMETERS
- * line         represents the line as a single string (unparsed).
- * arguments    represents an array of string which contains the command ([0]) 
- *              and its arguments ([1], [2], ... [255]).
- *
- * RETURN
- * /
- * ---------------------------------------------------------------------------*/
 void parseCmdLine(char* line, char** arguments) {
 	int i = 0;
 
@@ -42,16 +36,6 @@ void parseCmdLine(char* line, char** arguments) {
 	}
 }
 
-/* -----------------------------------------------------------------------------
- * Read a character from the user input and discard up to the newline.
- * /!\ DO NOT MODIFY /!\
- *
- * PARAMETERS
- * /
- *
- * RETURN
- * char     a single character of user input.
- * ---------------------------------------------------------------------------*/
 char readCharInput(void) {
 	char c = getchar();
 
@@ -60,19 +44,16 @@ char readCharInput(void) {
 	return c;
 }
 
-/* Built-in commands */
+void cmd_exit(char** arguments, vector* v) {
+    if(arguments[1] != NULL)
+        fprintf(stderr, "Arguments passed after the exit command have been discarded.\n");
 
-/* -----------------------------------------------------------------------------
- * Implements the 'cd' command.
- *
- * PARAMETERS
- * arguments    represents an array of string which contains the command ([0]) 
- *              and its arguments ([1], [2], ... [255]).
- *
- * RETURN
- * /
- * ---------------------------------------------------------------------------*/
-void cd_cmd(char** arguments) {
+    vector_free(v);
+
+    exit(0);
+}
+
+void cmd_cd(char** arguments) {
 	// Go to home directory
     if(arguments[1] == NULL || strcmp(arguments[1], "~") == 0) {
         chdir(getenv("HOME"));
@@ -81,97 +62,84 @@ void cd_cmd(char** arguments) {
     // Go up a directory
     else if(strcmp(arguments[1], "..") == 0) {
         chdir("..");
-
-        char s[100];
-
-        printf("%s\n", getcwd(s, 100)); 
     }
 
     // Go in a particular directory
     else if((char) arguments[1][0] == '/') {
         int v = chdir(arguments[1]);
 
-        if(v != 0)
-            perror("Unknown directory, or unable to open it.\n");
+        if(v != 0) {
+            fprintf(stderr, "Unknown directory, or unable to open it.\n");
+        }
     }
 
     // Go in a subdirectory
     else {
         int v = chdir(arguments[1]);
 
-        if(v != 0)
-            perror("Unknown subdirectory, or unable to open it.\n");
-    }
-}
-
-/* Non built-in commands */
-
-/* -----------------------------------------------------------------------------
- * Implements the execution of a non built-in command using
- * fork() and execvp().
- *
- * PARAMETERS
- * arguments    represents an array of string which contains the command ([0]) 
- *              and its arguments ([1], [2], ... [255]).
- *
- * RETURN
- * /
- * ---------------------------------------------------------------------------*/
-void exec_once(char** arguments, vector* v) {
-    pid_t pid = fork();
-
-    // If work has failed
-    if(pid < 0) {
-        perror("Fork has failed.\n");
-    }
-
-    // If we are in the parent process
-    else if(pid > 0) {
-        int status;
-
-        // Wait for child
-        wait(&status);
-
-        // Add command to history
-        vector_add(v, arguments[0], pid, status);
-    }
-
-    // If we are in the child process
-    else {
-        // Execute the command
-        if(execvp(arguments[0], arguments) < 0) {
-            perror("Execution of the command has failed.\n");
+        if(v != 0) {
+            fprintf(stderr, "Unknown subdirectory, or unable to open it.\n");
         }
     }
 }
 
-/* -----------------------------------------------------------------------------
- * Implements the multiple parallelized execution of a non built-in
- * command using fork() and execvp().
- *
- * PARAMETERS
- * number       represents the number of parallelized execution
- * arguments    represents an array of string which contains the command ([0]) 
- *              and its arguments ([1], [2], ... [255]).
- *
- * RETURN
- * /
- * ---------------------------------------------------------------------------*/
-void exec_mult(char** arguments, int number, vector* v) {
+void cmd_showlist(vector* v) {
+    vector_print(v);
+}
+
+vector* cmd_memdump(vector* v) {
+    return vector_export(v);
+}
+
+vector* cmd_loadmem(vector* v) {
+    return vector_import(v);
+}
+
+void exec_sequential(char** arguments, vector* v, int number) {
+    for(int i = 0; i < number; i++) {
+        pid_t pid = fork();
+
+        // If work has failed
+        if(pid < 0) {
+            perror("Fork error");
+        }
+
+        // If we are in the parent process
+        else if(pid > 0) {
+            int status;
+
+            // Wait for child
+            wait(&status);
+
+            // Add command to history
+            vector_add(v, arguments[0], pid, status);
+        }
+
+        // If we are in the child process
+        else {
+            // Execute the command
+            if(execvp(arguments[0], arguments) < 0) {
+                perror("Execution error");
+            }
+        }
+    }
+}
+
+void exec_parallel(char** arguments, vector* v, int number) {
     // Create the child processes
     for(int i = 0; i < number; i++) {
         pid_t pid = fork();
 
         // If work has failed
         if(pid < 0) {
-            perror("Fork has failed.\n");
+            perror("Fork error");
         }
 
         // If we are in the child process
         else if(pid == 0) {
             // Execute the command
             if(execvp(arguments[0], arguments) < 0) {
-                perror("Execution of the command has failed.\n");
+                perror("Execution error");
             }
         }
     }

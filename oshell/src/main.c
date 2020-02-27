@@ -13,10 +13,11 @@
 /***********/
 
 #include <stdio.h>
-#include <ctype.h>
 #include <stdlib.h>
+#include <ctype.h>
 #include <stdbool.h>
 #include <unistd.h>
+#include <string.h>
 
 #include "headers/oshell.h"
 #include "headers/vector.h"
@@ -52,8 +53,9 @@ int main() {
         printf("OShell> ");
         fgets(line, sizeof(line), stdin);
 
-        if(line[0] == '\n')
+        if(line[0] == '\n') {
             continue;
+        }
 
         // We parse the written command
         parseCmdLine(line, arguments);
@@ -64,17 +66,12 @@ int main() {
 
         /* 'exit' command */
         if(strcmp(arguments[0], "exit") == 0) {
-            if(arguments[1] != NULL)
-                perror("Arguments passed after the exit command have been discarded.\n");
-
-            vector_free(v);
-
-            exit(0);
+            cmd_exit(arguments, v);
         }
 
         /* 'cd' command */
         else if(strcmp(arguments[0], "cd") == 0) {
-            cd_cmd(arguments);
+            cmd_cd(arguments);
 
             // Don't pass through multiple copies
             continue;
@@ -82,7 +79,7 @@ int main() {
 
         /* 'showlist' cmd */
         else if(strcmp(arguments[0], "showlist") == 0) {
-            vector_print(v);
+            cmd_showlist(v);
 
             // Don't pass through multiple copies
             continue;
@@ -90,7 +87,7 @@ int main() {
 
         /* 'memdump' cmd */
         else if(strcmp(arguments[0], "memdump") == 0) {
-            v = vector_export(v);
+            v = cmd_memdump(v);
 
             // Don't pass through multiple copies
             continue;
@@ -98,7 +95,7 @@ int main() {
 
         /* 'loadmem' cmd */
         else if(strcmp(arguments[0], "loadmem") == 0) {
-            v = vector_import(v);
+            v = cmd_loadmem(v);
 
             // Don't pass through multiple copies
             continue;
@@ -117,7 +114,7 @@ int main() {
 
         /* Only once execution */
         if(copies == 1) {
-            exec_once(arguments, v);
+            exec_sequential(arguments, v, copies);
         }
 
         /* For multiple executions */
@@ -128,14 +125,12 @@ int main() {
 
             // Sequential executions
             if(!parallel) {
-                for(int i = 0; i < copies; i++) {
-                    exec_once(arguments, v);
-                }
+                exec_sequential(arguments, v, copies);
             }
 
             // Parallel executions
             else {
-                exec_mult(arguments, copies, v);
+                exec_parallel(arguments, v, copies);
             }
         }
     } while(true);

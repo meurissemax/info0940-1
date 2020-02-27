@@ -6,9 +6,6 @@
  * Group 1
  * 20161278 - MEURISSE Maxime
  * 20162864 - VERMEYLEN Valentin
- *
- * This implementation is partially adapted from :
- * https://eddmann.com/posts/implementing-a-dynamic-vector-array-in-c/
  */
 
 /***********/
@@ -22,15 +19,37 @@
 #include "headers/vector.h"
 
 
+/**************/
+/* Structures */
+/**************/
+
+typedef struct item {
+	char* command;
+	pid_t pid;
+	int exit_code;
+} item;
+
+struct _vector {
+	// Capacity of the vector
+	int capacity;
+
+	// Number of elements in the vector
+	int total;
+
+	// Elements of the vector
+	item** items;
+};
+
+
 /*************/
 /* Functions */
 /*************/
 
-vector* vector_init() {
+vector* vector_init(void) {
 	vector* v = malloc(sizeof(vector));
 
 	if(v == NULL) {
-		perror("Error while initializing vector.");
+		perror("Memory allocation error");
 		exit(1);
 	}
 
@@ -38,33 +57,64 @@ vector* vector_init() {
 	v->total = 0;
 	v->items = malloc(sizeof(item*) * v->capacity);
 
+	if(v->items == NULL) {
+		free(v);
+
+		perror("Memory allocation error");
+		exit(1);
+	}
+
 	return v;
 }
 
-void vector_resize(vector* v, int capacity) {
+/**
+ * Resize a vector. The new capacity of the vector is defined
+ * by the 'capacity' paramater. All existing values in the
+ * vector are kept in the resized vector.
+ *
+ * @param 	v 			a pointer to a vector
+ * @param 	capacity 	the new capacity of the vector
+ */
+static void vector_resize(vector* v, int capacity) {
 	item** items = realloc(v->items, sizeof(item*) * capacity);
 
 	if(items == NULL) {
-		perror("Error while resizing the vector.");
+		vector_free(v);
+
+		perror("Memory allocation error");
 		exit(1);
 	}
 
-	v->items = items;
 	v->capacity = capacity;
+	v->items = items;
 }
 
 void vector_add(vector* v, char* command, pid_t pid, int exit_code) {
+	if(v->capacity == v->total) {
+		vector_resize(v, v->capacity * 2);
+	}
+
 	item* i = malloc(sizeof(item));
 
 	if(i == NULL) {
-		perror("Error while creating new item.");
+		vector_free(v);
+
+		perror("Memory allocation error");
 		exit(1);
 	}
 
-	char* cmd_str = malloc(sizeof(char) * strlen(command));
-	strcpy(cmd_str, command);
+	char* c_command = malloc(sizeof(char) * strlen(command));
 
-	i->command = cmd_str;
+	if(c_command == NULL) {
+		vector_free(v);
+
+		perror("Memory allocation error");
+		exit(1);
+	}
+
+	strcpy(c_command, command);
+
+	i->command = c_command;
 	i->pid = pid;
 	i->exit_code = exit_code;
 
@@ -74,9 +124,7 @@ void vector_add(vector* v, char* command, pid_t pid, int exit_code) {
 void vector_print(vector* v) {
 	if(v->total > 0) {
 		for(int i = 0; i < v->total; i++) {
-			item* e = v->items[i];
-
-			printf("(%s;%d;%d)", e->command, e->pid, e->exit_code);
+			printf("(%s;%d;%d)", v->items[i]->command, v->items[i]->pid, v->items[i]->exit_code);
 
 			if(i == v->total - 1) {
 				printf("\n");

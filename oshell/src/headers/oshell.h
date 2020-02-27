@@ -16,11 +16,6 @@
 /* Headers */
 /***********/
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-
 #include "vector.h"
 
 
@@ -37,15 +32,81 @@ static const int MAX_ARGS = 256;
 /* Prototypes */
 /**************/
 
-// Can't modify the 2 following prototypes
-char readCharInput(void);
+/**
+ * Parse a command line into arguments.
+ *
+ * @param 	line 		represents the line as a single string (unparsed)
+ * @param 	arguments 	represents an array of string which contains the command ([0])
+ * 						and its arguments ([1], [2], ..., [255]).
+ */
 void parseCmdLine(char* line, char** arguments);
 
-// Built-in commands
-void cd_cmd(char** arguments);
+/**
+ * Read a character from the user input and discard up to the newline.
+ *
+ * @return 	a single character of user input
+ */
+char readCharInput(void);
 
-// Non built-in functions
-void exec_once(char** arguments, vector* v);
-void exec_mult(char** arguments, int number, vector* v);
+/**
+ * Execute the built-in 'exit' command.
+ *
+ * @param 	arguments 	array of string which contains the command and its arguments
+ * @param 	v 			a pointer to a vector
+ */
+void cmd_exit(char** arguments, vector* v);
+
+/**
+ * Execute the built-in 'cd' command.
+ *
+ * @param 	arguments 	array of string which contains the command and its arguments
+ */
+void cmd_cd(char** arguments);
+
+/**
+ * Execute the built-in 'showlist' command.
+ *
+ * @param 	v 			a pointer to a vector
+ */
+void cmd_showlist(vector* v);
+
+/**
+ * Execute the built-in 'memdump' command.
+ *
+ * @param 	v 			a pointer to a vector
+ * @return 	a pointer to a vector
+ */
+vector* cmd_memdump(vector* v);
+
+/**
+ * Execute the built-in 'loadmem' command.
+ *
+ * @param 	v 			a pointer to a vector
+ *
+ * @return 	a pointer to a vector
+ */
+vector* cmd_loadmem(vector* v);
+
+/**
+ * Execute a command (with its arguments) 'number' times
+ * sequentially and save the history of the execution
+ * in vector 'v'.
+ *
+ * @param 	arguments 	array of string which contains the command and its arguments
+ * @param 	v 			a pointer to a vector
+ * @param 	number 		the number of times to run the command
+ */
+void exec_sequential(char** arguments, vector* v, int number);
+
+/**
+ * Execute a command (with its arguments) 'number' times
+ * in a parallel way and save the history of the execution
+ * in vector 'v'.
+ *
+ * @param 	arguments 	array of string which contains the command and its arguments
+ * @param 	v 			a pointer to a vector
+ * @param 	number 		the number of times to run the command
+ */
+void exec_parallel(char** arguments, vector* v, int number);
 
 #endif
