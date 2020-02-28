@@ -15,6 +15,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <fcntl.h>
 
 #include "headers/vector.h"
 
@@ -136,25 +137,25 @@ void vector_print(vector* v) {
 }
 
 vector* vector_export(vector* v) {
-	FILE* fptr;
+	int fd;
 
-	if((fptr = fopen("memdump.bin", "wb")) == NULL) {
-		perror("Unable to export vector in a binary file.");
+	if((fd = open("memdump.bin", O_WRONLY | O_CREAT)) == -1) {
+		fprintf(stderr, "Unable to export vector in a binary file.");
 	}
 
-	fwrite(&v->total, sizeof(int), 1, fptr);
+	write(fd, &v->total, sizeof(v->total));
 
 	for(int i = 0; i < v->total; i++) {
 		int char_length = strlen(v->items[i]->command);
 
-		fwrite(&char_length, sizeof(int), 1, fptr);
-		fwrite(v->items[i]->command, sizeof(char), char_length + 1, fptr);
+		write(fd, &char_length, sizeof(char_length));
+		write(fd, v->items[i]->command, sizeof(char) * (char_length + 1));
 
-		fwrite(&v->items[i]->pid, sizeof(pid_t), 1, fptr);
-		fwrite(&v->items[i]->exit_code, sizeof(int), 1, fptr);
+		write(fd, &v->items[i]->pid, sizeof(v->items[i]->pid));
+		write(fd, &v->items[i]->exit_code, sizeof(v->items[i]->exit_code));
 	}
 
-	fclose(fptr);
+	close(fd);
 
 	vector_free(v);
 
@@ -166,15 +167,15 @@ vector* vector_import(vector* v) {
 
 	vector* imported_v = vector_init();
 
-	FILE* fptr;
+	int fd;
 
-	if((fptr = fopen("memdump.bin", "rb")) == NULL) {
-		perror("Unable to import vector from a binary file.");
+	if((fd = open("memdump.bin", O_RDONLY)) == -1) {
+		fprintf(stderr, "Unable to import vector from a binary file.");
 	}
 
 	int nb_items = 0;
 
-	fread(&nb_items, sizeof(int), 1, fptr);
+	read(fd, &nb_items, sizeof(nb_items));
 
 	for(int i = 0; i < nb_items; i++) {
 		int char_length = 0;
@@ -184,18 +185,18 @@ vector* vector_import(vector* v) {
 
 		char* command = malloc(sizeof(char) * char_length);
 
-		fread(&char_length, sizeof(int), 1, fptr);
-		fread(command, sizeof(char), char_length + 1, fptr);
+		read(fd, &char_length, sizeof(char_length));
+		read(fd, command, sizeof(char) * (char_length + 1));
 
-		fread(&pid, sizeof(pid_t), 1, fptr);
-		fread(&exit_code, sizeof(int), 1, fptr);
+		read(fd, &pid, sizeof(pid));
+		read(fd, &exit_code, sizeof(exit_code));
 
 		vector_add(imported_v, command, pid, exit_code);
 
 		free(command);
 	}
 
-	fclose(fptr);
+	close(fd);
 
 	return imported_v;
 }
