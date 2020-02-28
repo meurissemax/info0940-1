@@ -11,12 +11,13 @@
 #ifndef VECTOR_H
 #define VECTOR_H
 
+
 /***********/
 /* Headers */
 /***********/
 
-#include <unistd.h>
 #include <sys/types.h>
+#include <unistd.h>
 
 
 /*******************/

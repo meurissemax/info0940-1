@@ -12,13 +12,24 @@
 /* Headers */
 /***********/
 
+#define _POSIX_SOURCE
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <signal.h>
+#include <sys/wait.h>
 #include <sys/types.h>
 
 #include "headers/oshell.h"
+
+
+/*************/
+/* Variables */
+/*************/
+
+int sigalrm_flag = 0;
 
 
 /*************/
@@ -31,9 +42,8 @@ void parseCmdLine(char* line, char** arguments) {
 	line[strlen(line) - 1] = '\0';
 	arguments[i] = strtok(line, " ");
 
-	while(arguments[i++] && i < MAX_ARGS) {
-		arguments[i] = strtok(NULL, " ");
-	}
+	while(arguments[i++] && i < MAX_ARGS)
+        arguments[i] = strtok(NULL, " ");
 }
 
 char readCharInput(void) {
@@ -44,11 +54,11 @@ char readCharInput(void) {
 	return c;
 }
 
-void cmd_exit(char** arguments, vector* v) {
+void cmd_exit(char** arguments, vector* cmd_list) {
     if(arguments[1] != NULL)
-        fprintf(stderr, "Arguments passed after the exit command have been discarded.\n");
+        fprintf(stderr, "Arguments passed after the exit command have been discarded\n");
 
-    vector_free(v);
+    vector_free(cmd_list);
 
     exit(0);
 }
@@ -69,7 +79,7 @@ void cmd_cd(char** arguments) {
         int v = chdir(arguments[1]);
 
         if(v != 0) {
-            fprintf(stderr, "Unknown directory, or unable to open it.\n");
+            fprintf(stderr, "Unknown directory, or unable to open it\n");
         }
     }
 
@@ -78,24 +88,34 @@ void cmd_cd(char** arguments) {
         int v = chdir(arguments[1]);
 
         if(v != 0) {
-            fprintf(stderr, "Unknown subdirectory, or unable to open it.\n");
+            fprintf(stderr, "Unknown subdirectory, or unable to open it\n");
         }
     }
 }
 
-void cmd_showlist(vector* v) {
-    vector_print(v);
+void cmd_showlist(vector* cmd_list) {
+    vector_print(cmd_list);
 }
 
-vector* cmd_memdump(vector* v) {
-    return vector_export(v);
+vector* cmd_memdump(vector* cmd_list) {
+    return vector_export(cmd_list);
 }
 
-vector* cmd_loadmem(vector* v) {
-    return vector_import(v);
+vector* cmd_loadmem(vector* cmd_list) {
+    return vector_import(cmd_list);
 }
 
-void exec_sequential(char** arguments, vector* v, int number) {
+void exec_once(char** arguments, vector* cmd_list) {
+    exec_sequential(arguments, cmd_list, 1);
+}
+
+static void sigalrm_handler(int sig) {
+    fprintf(stderr, "Process timeout\n");
+
+    sigalrm_flag = sig;
+}
+
+void exec_sequential(char** arguments, vector* cmd_list, int number) {
     for(int i = 0; i < number; i++) {
         pid_t pid = fork();
 
@@ -104,28 +124,40 @@ void exec_sequential(char** arguments, vector* v, int number) {
             perror("Fork error");
         }
 
-        // If we are in the parent process
-        else if(pid > 0) {
-            int status;
-
-            // Wait for child
-            wait(&status);
-
-            // Add command to history
-            vector_add(v, arguments[0], pid, status);
-        }
-
         // If we are in the child process
-        else {
+        else if (pid == 0) {
             // Execute the command
             if(execvp(arguments[0], arguments) < 0) {
                 perror("Execution error");
+                exit(1);
             }
+        } else {
+            // Set the signal and the alarm for the timeout
+            signal(SIGALRM, sigalrm_handler);
+            alarm(TIME_LIMIT);
+
+            // Status of the child process
+            int status;
+
+            // We wait for child or timeout
+            while((wait(&status)) != -1 && sigalrm_flag == 0);
+
+            // We add the command to the command list (timeout or not)
+            vector_add(cmd_list, arguments[0], pid, WEXITSTATUS(status));
+
+            // If a timeout occurs, we kill the child process
+            if(sigalrm_flag == 1) {
+                kill(pid, 9);
+            }
+
+            // We reset the timeout
+            alarm(0);
+            sigalrm_flag = 0;
         }
     }
 }
 
-void exec_parallel(char** arguments, vector* v, int number) {
+void exec_parallel(char** arguments, vector* cmd_list, int number) {
     // Create the child processes
     for(int i = 0; i < number; i++) {
         pid_t pid = fork();
@@ -140,19 +172,21 @@ void exec_parallel(char** arguments, vector* v, int number) {
             // Execute the command
             if(execvp(arguments[0], arguments) < 0) {
                 perror("Execution error");
+                exit(1);
             }
         }
     }
 
     // Parent process waits for child processes
     while(number > 0) {
+        // Status of the child process
         int status;
 
-        // Wait for child
-        pid_t pid = wait(&status);
+        // We wait for child
+        pid_t pid = waitpid(-1, &status, 0);
 
-        // Add command to history
-        vector_add(v, arguments[0], pid, status);
+        // We add the command to the command list
+        vector_add(cmd_list, arguments[0], pid, WEXITSTATUS(status));
 
         number--;
     }

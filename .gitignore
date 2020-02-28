@@ -10,5 +10,6 @@
 # Code #
 ########
 
-# Executable
 oshell/src/oshell
+oshell/src/memdump.bin
+oshell/src/oshell.dSYM/
