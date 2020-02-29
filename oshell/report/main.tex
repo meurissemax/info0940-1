@@ -1,0 +1,65 @@
+\documentclass[a4paper, 12pt]{article}
+
+%%%%%%%%%%%%%%%%%%% Packages
+
+\usepackage[english]{babel}
+\usepackage[noheader]{sleek/sleek}
+\usepackage{sleek/sleek-title}
+\usepackage{sleek/sleek-theorems}
+
+%%%%%%%%%%%%%%%%%%% Titlepage
+
+\logo{resources/pdf/logo-uliege.pdf}
+\institute{University of Liège}
+\title{Project 1 : OShell}
+\subtitle{Operating systems}
+\author{
+    Maxime \textsc{Meurisse}\\
+    Valentin \textsc{Vermeylen}\\
+}
+\context{Master in Engineering and Computer Science}
+\date{Academic year 2019-2020}
+
+%%%%%%%%%%%%%%%%%%% Document
+
+\begin{document}
+    % ----- Title page ----- %
+    \maketitle
+    
+    % ----- Processes managements ----- %
+    \section{Processes management}
+    
+    To manage sequential process execution, we have implemented a loop that iterates $n$ times ($n$ being the number of executions of the command). At each iteration of this loop, we create a new process with \texttt{fork}. The child process executes the command with \texttt{execvp} or terminates in case of a problem. The parent process waits for the child process to finish executing (a 5 second timeout is implemented). When the child process is finished, the command is added to the command list (by the parent) and the next iteration of the loop can begin.
+    
+    To manage parallel process execution, we have implemented two loops that iterate each $n$ times ($n$ being the number of times the command is executed). The first loop will create a new process at each iteration with \texttt{fork}. Each child process executes the command with \texttt{execvp} or terminates in case of a problem. The second loop is a series of $n$ \texttt{wait} allowing the parent to wait for the end of each child's execution.
+    
+    The major difference between sequential and parallel execution is that in the first case, a \texttt{fork} is directly followed by a \texttt{wait}, whereas in the second case, all the \texttt{fork} are executed first and the \texttt{wait} come afterwards.
+    
+    % ----- Process list management ----- %
+    \section{Process list management}
+    
+    To memorize the list of commands performed, we have implemented a simplified version of a vector (acting as a simple stack). Its starting capacity is 10. When the vector is full, its size is doubled (dynamically with \texttt{malloc} and \texttt{realloc}). Each element of the vector is a structure containing the command performed, the PID of the process that performed the command, and the exit code of the process.
+    
+    To export the contents of the vector into a \texttt{memdump.bin} file, we first write an integer representing the number of elements contained in the vector. We then write the information composing each element of the vector sequentially. Each command is preceded by its size so that when reading the file, a \texttt{char*} of the right size can be allocated.
+    
+    For example, if the list is as follows :
+    
+    \begin{center}
+        \texttt{(ls;10;0)->(uname;11;0)}
+    \end{center}
+    
+    the content of the file\footnote{The content of the file is written legibly for this example. In practice, the content is binary and therefore unreadable for a human reader.} will be
+    
+    \begin{center}
+        \texttt{22ls1005uname110}
+    \end{center}
+    
+    % ----- Time spent on the project ----- %
+    \section{Time spent on the project}
+    
+    The project was achievable in a reasonable amount of time. The design of the OShell itself was completed fairly quickly (5 hours at most).
+    
+    We spent most of the time debugging the program because we hadn't done C for a while and some points had escaped us (memory allocations, etc).
+    
+    In total, we spent about 15 hours on this project.
+\end{document}

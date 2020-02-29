@@ -111,7 +111,7 @@ int main() {
 
         /* 'memdump' cmd */
         else if(strcmp(arguments[0], "memdump") == 0) {
-            v = cmd_memdump(cmd_list);
+            cmd_list = cmd_memdump(cmd_list);
 
             // Don't pass through multiple copies
             continue;
@@ -119,7 +119,7 @@ int main() {
 
         /* 'loadmem' cmd */
         else if(strcmp(arguments[0], "loadmem") == 0) {
-            v = cmd_loadmem(cmd_list);
+            cmd_list = cmd_loadmem(cmd_list);
 
             // Don't pass through multiple copies
             continue;
