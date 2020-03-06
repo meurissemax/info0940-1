@@ -92,6 +92,13 @@ vector* cmd_memdump(vector* cmd_list);
 vector* cmd_loadmem(vector* cmd_list);
 
 /**
+ * Execute the built-in 'sys' command.
+ *
+ * @param 	arguments 	array of string which contains the command and its arguments
+ */
+void cmd_sys(char** arguments);
+
+/**
  * Execute a command (with its arguments) once and
  * save the history of the execution in vector 'v'.
  *

@@ -17,6 +17,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include <unistd.h>
 #include <signal.h>
 #include <sys/wait.h>
@@ -103,6 +104,82 @@ vector* cmd_memdump(vector* cmd_list) {
 
 vector* cmd_loadmem(vector* cmd_list) {
     return vector_import(cmd_list);
+}
+
+static void cmd_sys_netstats() {
+    printf("sys netstats\n");
+}
+
+static void cmd_sys_devstats() {
+    printf("sys devstats\n");
+}
+
+static void cmd_sys_stats(char** arguments) {
+    /* missing argument */
+    if(arguments[2] == NULL) {
+        fprintf(stderr, "Missing <pid>\n");
+    }
+
+    /* no missing argument */
+    else {
+        // We check if the PID is valid
+        for(unsigned long i = 0; i < strlen(arguments[2]); i++) {
+            if(!isdigit(arguments[2][i])) {
+                fprintf(stderr, "Wrong <pid>\n");
+
+                return;
+            }
+        }
+
+        /* We get stats about the process with this PID */
+        FILE* fptr;
+
+        // We construct the filename where stats are located
+        char filename[12 + strlen(arguments[2])];
+
+        strcpy(filename, "/proc/");
+        strcat(filename, arguments[2]);
+        strcat(filename, "/stat");
+
+        // We try to open this file (if it exists)
+        if((fptr = fopen(filename, "wb")) == NULL) {
+            fprintf(stderr, "Unable to get stats about this process\n");
+        }
+
+        // We get information of the file
+        pid_t pid;
+
+        //fread(&char_length, sizeof(int), 1, fptr);
+
+        fclose(fptr);
+    }
+}
+
+void cmd_sys(char** arguments) {
+    /* missing argument */
+    if(arguments[1] == NULL) {
+        fprintf(stderr, "Missing argument\n");
+    }
+
+    /* 'sys netstats' command */
+    else if(strcmp(arguments[1], "netstats") == 0) {
+        cmd_sys_netstats();
+    }
+
+    /* 'sys devstats' command */
+    else if(strcmp(arguments[1], "devstats") == 0) {
+        cmd_sys_devstats();
+    }
+
+    /* 'sys stats' command */
+    else if(strcmp(arguments[1], "stats") == 0) {
+        cmd_sys_stats(arguments);
+    }
+
+    /* unknown argument */
+    else {
+        fprintf(stderr, "Unknown argument\n");
+    }
 }
 
 void exec_once(char** arguments, vector* cmd_list) {

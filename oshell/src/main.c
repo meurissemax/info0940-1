@@ -101,7 +101,7 @@ int main() {
             continue;
         }
 
-        /* 'showlist' cmd */
+        /* 'showlist' command */
         else if(strcmp(arguments[0], "showlist") == 0) {
             cmd_showlist(cmd_list);
 
@@ -109,7 +109,7 @@ int main() {
             continue;
         }
 
-        /* 'memdump' cmd */
+        /* 'memdump' command */
         else if(strcmp(arguments[0], "memdump") == 0) {
             cmd_list = cmd_memdump(cmd_list);
 
@@ -117,9 +117,17 @@ int main() {
             continue;
         }
 
-        /* 'loadmem' cmd */
+        /* 'loadmem' command */
         else if(strcmp(arguments[0], "loadmem") == 0) {
             cmd_list = cmd_loadmem(cmd_list);
+
+            // Don't pass through multiple copies
+            continue;
+        }
+
+        /* 'sys' command */
+        else if(strcmp(arguments[0], "sys") == 0) {
+            cmd_sys(arguments);
 
             // Don't pass through multiple copies
             continue;
