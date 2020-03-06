@@ -118,7 +118,48 @@ static char* get_state_details(char state) {
 }
 
 static void cmd_sys_netstats() {
-    printf("sys netstats\n");
+    FILE* fptr;
+
+    // We try to open this file (if it exists)
+    if((fptr = fopen("/proc/net/dev", "r")) == NULL) {
+        fprintf(stderr, "Unable to get netstat information\n");
+
+        return;
+    }
+
+    char buffer[255], ifname[255];
+
+    unsigned long int r_pkts, r_err, r_drop;
+    unsigned long int s_pkts, s_err, s_drop;
+
+    unsigned long int r_err_rate, r_drop_rate, s_err_rate, s_drop_rate;
+
+    unsigned long int dummy;
+
+    // We skip the first two lines
+    for(int i = 0; i < 2; i++)
+        fgets(buffer, 255, fptr);
+
+    // We get and print the information, line by line
+    while(fgets(buffer, 255, fptr)) {
+        sscanf(
+            buffer,
+            "%[^:]: %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu",
+            ifname, &dummy, &r_pkts, &r_err, &r_drop, &dummy, &dummy, &dummy, &dummy, &dummy, &s_pkts, &s_err, &s_drop
+        );
+
+        r_err_rate = r_err / r_pkts;
+        r_drop_rate = r_drop / r_pkts;
+        s_err_rate = s_err / s_pkts;
+        s_drop_rate = s_drop / s_pkts;
+
+        printf(
+            "[%s]: Rx(pkts: %lu, err: %lu%c, drop: %lu%c) - Tx(pkts: %lu, err: %lu%c, drop: %lu%c)\n",
+            ifname, r_pkts, r_err_rate, '%', r_drop_rate, '%', s_pkts, s_err_rate, '%', s_drop_rate, '%'
+        );
+    }
+
+    fclose(fptr);
 }
 
 static void cmd_sys_devstats() {
