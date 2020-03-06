@@ -106,6 +106,17 @@ vector* cmd_loadmem(vector* cmd_list) {
     return vector_import(cmd_list);
 }
 
+static char* get_state_details(char state) {
+    switch(state) {
+        case 'R' : return "R (running)";
+        case 'S' : return "S (sleeping)";
+        case 'D' : return "D (waiting)";
+        case 'Z' : return "Z (zombie)";
+        case 'T' : return "T (stopped)";
+        default : return "unknown";
+    }
+}
+
 static void cmd_sys_netstats() {
     printf("sys netstats\n");
 }
@@ -142,16 +153,39 @@ static void cmd_sys_stats(char** arguments) {
         strcat(filename, "/stat");
 
         // We try to open this file (if it exists)
-        if((fptr = fopen(filename, "wb")) == NULL) {
+        if((fptr = fopen(filename, "r")) == NULL) {
             fprintf(stderr, "Unable to get stats about this process\n");
+
+            return;
         }
 
         // We get information of the file
-        pid_t pid;
+        int dummy_d;
+        unsigned dummy_u;
+        unsigned long dummy_lu;
+        long int dummy_ld;
 
-        //fread(&char_length, sizeof(int), 1, fptr);
+        char process_name[255];
+        char process_state;
+        long int process_num_threads;
+
+        fscanf(
+            fptr,
+            "%d %s %c %d %d %d %d %d %u %lu %lu %lu %lu %lu %lu %ld %ld %ld %ld %ld",
+            &dummy_d, process_name, &process_state, &dummy_d, &dummy_d, &dummy_d, &dummy_d, &dummy_d, &dummy_u, &dummy_lu, &dummy_lu, &dummy_lu, &dummy_lu, &dummy_lu, &dummy_lu, &dummy_ld, &dummy_ld, &dummy_ld, &dummy_ld, &process_num_threads
+        );
 
         fclose(fptr);
+
+        // We print the information
+        char* process_name_trim = process_name;
+
+        process_name_trim++;
+        process_name_trim[strlen(process_name_trim) - 1] = 0;
+
+        printf("Process name: %s\n", process_name_trim);
+        printf("Process state: %s\n", get_state_details(process_state));
+        printf("Process thread(s): %ld\n", process_num_threads);
     }
 }
 
