@@ -12,30 +12,38 @@
 /* Headers */
 /***********/
 
+#define _GNU_SOURCE
 #define _POSIX_SOURCE
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include <unistd.h>
 #include <signal.h>
 #include <sys/wait.h>
 #include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <dirent.h>
 
 #include "headers/oshell.h"
 
 
-/*************/
-/* Variables */
-/*************/
+/*********************/
+/* General variables */
+/*********************/
 
+// Flag to handle timeout
 int sigalrm_flag = 0;
 
 
 /*************/
 /* Functions */
 /*************/
+
+/* ------- */
+/* Parsing */
+/* ------- */
 
 void parseCmdLine(char* line, char** arguments) {
 	int i = 0;
@@ -54,6 +62,11 @@ char readCharInput(void) {
 
 	return c;
 }
+
+
+/* ----------------- */
+/* Built-in commands */
+/* ----------------- */
 
 void cmd_exit(char** arguments, vector* cmd_list) {
     if(arguments[1] != NULL)
@@ -106,6 +119,164 @@ vector* cmd_loadmem(vector* cmd_list) {
     return vector_import(cmd_list);
 }
 
+static char* remove_multiple_space(char* str) {
+    size_t str_length = strlen(str);
+
+    char* clean_str = malloc(sizeof(char) * (str_length + 1));
+    int j = 0;
+    int space_mode = 0;
+
+    for(size_t i = 0; i < str_length; i++) {
+        if(str[i] == ' ') {
+            if(!space_mode) {
+                clean_str[j++] = str[i];
+                space_mode = 1;
+            }
+        } else {
+            clean_str[j++] = str[i];
+            space_mode = 0;
+        }
+    }
+
+    clean_str[j] = '\0';
+
+    return clean_str;
+}
+
+static void cmd_sys_netstats() {
+    FILE* fptr;
+
+    // We try to open the file with the information
+    // that we need
+    if((fptr = fopen("/proc/net/dev", "r")) == NULL) {
+        fprintf(stderr, "Unable to get netstats information\n");
+
+        return;
+    }
+
+    // We initialize data that we wand to read
+    char buffer[255], ifname[255];
+
+    int r_pkts, r_err, r_drop;
+    int s_pkts, s_err, s_drop;
+
+    int r_err_rate, r_drop_rate, s_err_rate, s_drop_rate;
+
+    // We skip the first two lines of the file
+    // (because it is header information)
+    for(int i = 0; i < 2; i++)
+        fgets(buffer, 255, fptr);
+
+    // We get and print the information, line by line
+    while(fgets(buffer, 255, fptr)) {
+        char* clean_buffer = remove_multiple_space(buffer);
+
+        sscanf(
+            clean_buffer,
+            "%[^:]: %*d %d %d %d %*u %*u %*u %*u %*u %d %d %d",
+            ifname, &r_pkts, &r_err, &r_drop, &s_pkts, &s_err, &s_drop
+        );
+
+        if(r_pkts != 0 || s_pkts != 0) {
+            r_err_rate = r_err / r_pkts;
+            r_drop_rate = r_drop / r_pkts;
+            s_err_rate = s_err / s_pkts;
+            s_drop_rate = s_drop / s_pkts;
+        } else {
+            r_err_rate = 0;
+            r_drop_rate = 0;
+            s_err_rate = 0;
+            s_drop_rate = 0;
+        }
+
+        printf(
+            "[%s]: Rx(pkts: %d, err: %d%c, drop: %d%c) - Tx(pkts: %d, err: %d%c, drop: %d%c)\n",
+            ifname, r_pkts, r_err_rate, '%', r_drop_rate, '%', s_pkts, s_err_rate, '%', s_drop_rate, '%'
+        );
+
+        free(clean_buffer);
+    }
+
+    // We close the file
+    fclose(fptr);
+}
+
+static int is_symlink(const char *filename) {
+    struct stat p_statbuf;
+
+    if(lstat(filename, &p_statbuf) < 0) { 
+        perror("Check symlink");
+        exit(1); 
+    }
+
+    if(S_ISLNK(p_statbuf.st_mode) == 1)
+        return 1;
+    else
+        return 0;
+}
+
+static void get_device_info(char* base_path, int* n_active, int* n_suspended, int* n_unsupported) {
+    char path[1000];
+    struct dirent *dp;
+    DIR *dir = opendir(base_path);
+
+    if(!dir)
+        return;
+
+    while((dp = readdir(dir)) != NULL) {
+        if(strcmp(dp->d_name, ".") != 0 && strcmp(dp->d_name, "..") != 0) {
+            strcpy(path, base_path);
+            strcat(path, "/");
+            strcat(path, dp->d_name);
+
+            if(strcmp(dp->d_name, "runtime_status") == 0) {
+                FILE* fptr;
+
+                if((fptr = fopen(path, "r")) == NULL) {
+                    fprintf(stderr, "Unable to get device information\n");
+
+                    return;
+                }
+
+                char buffer[12];
+
+                fgets(buffer, 12, fptr);
+
+                if(strncmp(buffer, "active", strlen("active")) == 0) {
+                    (*n_active)++;
+                } else if(strncmp(buffer, "suspended", strlen("suspended")) == 0) {
+                    (*n_suspended)++;
+                } else if(strncmp(buffer, "unsupported", strlen("unsupported")) == 0) {
+                    (*n_unsupported)++;
+                }
+
+                fclose(fptr);
+            }
+
+            if(!is_symlink(path)) {
+                get_device_info(path, n_active, n_suspended, n_unsupported);
+            }
+        }
+    }
+
+    closedir(dir);
+}
+
+static void cmd_sys_devstats() {
+    // We initialize data that we wand to read
+    int n_active = 0;
+    int n_suspended = 0;
+    int n_unsupported = 0;
+
+    // We get device information
+    get_device_info("/sys/devices", &n_active, &n_suspended, &n_unsupported);
+
+    // We print the information
+    printf("Active: %d\n", n_active);
+    printf("Suspended: %d\n", n_suspended);
+    printf("Unsupported: %d\n", n_unsupported);
+}
+
 static char* get_state_details(char state) {
     switch(state) {
         case 'R' : return "R (running)";
@@ -115,55 +286,6 @@ static char* get_state_details(char state) {
         case 'T' : return "T (stopped)";
         default : return "unknown";
     }
-}
-
-static void cmd_sys_netstats() {
-    FILE* fptr;
-
-    // We try to open this file (if it exists)
-    if((fptr = fopen("/proc/net/dev", "r")) == NULL) {
-        fprintf(stderr, "Unable to get netstat information\n");
-
-        return;
-    }
-
-    char buffer[255], ifname[255];
-
-    unsigned long int r_pkts, r_err, r_drop;
-    unsigned long int s_pkts, s_err, s_drop;
-
-    unsigned long int r_err_rate, r_drop_rate, s_err_rate, s_drop_rate;
-
-    unsigned long int dummy;
-
-    // We skip the first two lines
-    for(int i = 0; i < 2; i++)
-        fgets(buffer, 255, fptr);
-
-    // We get and print the information, line by line
-    while(fgets(buffer, 255, fptr)) {
-        sscanf(
-            buffer,
-            "%[^:]: %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu",
-            ifname, &dummy, &r_pkts, &r_err, &r_drop, &dummy, &dummy, &dummy, &dummy, &dummy, &s_pkts, &s_err, &s_drop
-        );
-
-        r_err_rate = r_err / r_pkts;
-        r_drop_rate = r_drop / r_pkts;
-        s_err_rate = s_err / s_pkts;
-        s_drop_rate = s_drop / s_pkts;
-
-        printf(
-            "[%s]: Rx(pkts: %lu, err: %lu%c, drop: %lu%c) - Tx(pkts: %lu, err: %lu%c, drop: %lu%c)\n",
-            ifname, r_pkts, r_err_rate, '%', r_drop_rate, '%', s_pkts, s_err_rate, '%', s_drop_rate, '%'
-        );
-    }
-
-    fclose(fptr);
-}
-
-static void cmd_sys_devstats() {
-    printf("sys devstats\n");
 }
 
 static void cmd_sys_stats(char** arguments) {
@@ -177,7 +299,7 @@ static void cmd_sys_stats(char** arguments) {
         // We check if the PID is valid
         for(unsigned long i = 0; i < strlen(arguments[2]); i++) {
             if(!isdigit(arguments[2][i])) {
-                fprintf(stderr, "Wrong <pid>\n");
+                fprintf(stderr, "Invalid <pid>\n");
 
                 return;
             }
@@ -195,35 +317,35 @@ static void cmd_sys_stats(char** arguments) {
 
         // We try to open this file (if it exists)
         if((fptr = fopen(filename, "r")) == NULL) {
-            fprintf(stderr, "Unable to get stats about this process\n");
+            fprintf(stderr, "No process with this PID\n");
 
             return;
         }
 
-        // We get information of the file
-        int dummy_d;
-        unsigned dummy_u;
-        unsigned long dummy_lu;
-        long int dummy_ld;
-
+        // We initialize the information that we want
         char process_name[255];
         char process_state;
         long int process_num_threads;
 
+        // We read the information
         fscanf(
             fptr,
-            "%d %s %c %d %d %d %d %d %u %lu %lu %lu %lu %lu %lu %ld %ld %ld %ld %ld",
-            &dummy_d, process_name, &process_state, &dummy_d, &dummy_d, &dummy_d, &dummy_d, &dummy_d, &dummy_u, &dummy_lu, &dummy_lu, &dummy_lu, &dummy_lu, &dummy_lu, &dummy_lu, &dummy_ld, &dummy_ld, &dummy_ld, &dummy_ld, &process_num_threads
+            "%*d %s %c %*d %*d %*d %*d %*d %*u %*u %*u %*u %*u %*u %*u %*d %*d %*d %*d %ld",
+            process_name, &process_state, &process_num_threads
         );
 
+        // We close the file
         fclose(fptr);
 
-        // We print the information
+        // We process the 'process_name' information
         char* process_name_trim = process_name;
 
+        // We remove first and last character (because process
+        // name is between brace brackets)
         process_name_trim++;
         process_name_trim[strlen(process_name_trim) - 1] = 0;
 
+        // We print the information
         printf("Process name: %s\n", process_name_trim);
         printf("Process state: %s\n", get_state_details(process_state));
         printf("Process thread(s): %ld\n", process_num_threads);
@@ -256,6 +378,11 @@ void cmd_sys(char** arguments) {
         fprintf(stderr, "Unknown argument\n");
     }
 }
+
+
+/* --------------------- */
+/* Non built-in commands */
+/* --------------------- */
 
 void exec_once(char** arguments, vector* cmd_list) {
     exec_sequential(arguments, cmd_list, 1);

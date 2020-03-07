@@ -24,10 +24,11 @@
 #include "headers/vector.h"
 
 
-/*************/
-/* Functions */
-/*************/
+/**********************************/
+/* Global variables and functions */
+/**********************************/
 
+// Variable and function to handle the CTRL + C
 int sigint_flag;
 
 void sigint_exit(int sig);
@@ -42,9 +43,9 @@ void sigint_exit(int sig) {
 /********/
 
 int main() {
-    /*************/
+    /* --------- */
     /* Variables */
-    /*************/
+    /* --------- */
 
     char line[MAX_CMD_SIZE]; 
     char* arguments[MAX_ARGS];
@@ -58,21 +59,21 @@ int main() {
     // Flag to handle CTRL + C
     sigint_flag = 0;
 
-    /***********/
+    /* ------- */
     /* Signals */
-    /***********/
+    /* ------- */
 
     // Set the signal to handle CTRL + C
     signal(SIGINT, sigint_exit);
 
-    /*************/
+    /* --------- */
     /* Main loop */
-    /*************/
+    /* --------- */
 
     do {
-        /******************/
+        /* -------------- */
         /* Initialization */
-        /******************/
+        /* -------------- */
 
         // We print the OShell
         printf("OShell> ");
@@ -84,9 +85,9 @@ int main() {
         // We parse the written command
         parseCmdLine(line, arguments);
 
-        /*********************/
+        /* ----------------- */
         /* Built-in commands */
-        /*********************/
+        /* ----------------- */
 
         /* 'exit' command */
         if(strcmp(arguments[0], "exit") == 0) {
@@ -133,9 +134,9 @@ int main() {
             continue;
         }
 
-        /*************************/
+        /* --------------------- */
         /* Non built-in commands */
-        /*************************/
+        /* --------------------- */
 
         // Number of times to execute a specific command
         do {
@@ -149,7 +150,7 @@ int main() {
             exec_once(arguments, cmd_list);
         }
 
-        /* For multiple executions */
+        /* Multiple executions */
         else if(copies > 1) {
             printf("\t[S]equential (default) or [P]arallelize> ");
 

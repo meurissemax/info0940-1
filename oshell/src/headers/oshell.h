@@ -35,6 +35,10 @@ static const int MAX_ARGS = 256;
 /* Prototypes */
 /**************/
 
+/* ------- */
+/* Parsing */
+/* ------- */
+
 /**
  * Parse a command line into arguments.
  *
@@ -50,6 +54,11 @@ void parseCmdLine(char* line, char** arguments);
  * @return 	a single character of user input
  */
 char readCharInput(void);
+
+
+/* ----------------- */
+/* Built-in commands */
+/* ----------------- */
 
 /**
  * Execute the built-in 'exit' command.
@@ -98,9 +107,14 @@ vector* cmd_loadmem(vector* cmd_list);
  */
 void cmd_sys(char** arguments);
 
+
+/* --------------------- */
+/* Non built-in commands */
+/* --------------------- */
+
 /**
  * Execute a command (with its arguments) once and
- * save the history of the execution in vector 'v'.
+ * save the history of the execution in vector 'cmd_list'.
  *
  * @param 	arguments 	array of string which contains the command and its arguments
  * @param 	cmd_list 	a pointer to the command list
@@ -110,7 +124,7 @@ void exec_once(char** arguments, vector* cmd_list);
 /**
  * Execute a command (with its arguments) 'number' times
  * sequentially and save the history of the execution
- * in vector 'v'.
+ * in vector 'cmd_list'.
  *
  * @param 	arguments 	array of string which contains the command and its arguments
  * @param 	cmd_list 	a pointer to the command list
@@ -121,7 +135,7 @@ void exec_sequential(char** arguments, vector* cmd_list, int number);
 /**
  * Execute a command (with its arguments) 'number' times
  * in a parallel way and save the history of the execution
- * in vector 'v'.
+ * in vector 'cmd_list'.
  *
  * @param 	arguments 	array of string which contains the command and its arguments
  * @param 	cmd_list 	a pointer to the command list

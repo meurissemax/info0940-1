@@ -6,6 +6,14 @@
 .DS_Store
 
 
+##########
+# Remote #
+##########
+
+# SSH
+*sftp-config.json
+
+
 ########
 # Code #
 ########
