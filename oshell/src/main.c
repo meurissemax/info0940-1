@@ -28,13 +28,24 @@
 /* Global variables and functions */
 /**********************************/
 
-// Variable and function to handle the CTRL + C
-int sigint_flag;
+// The command list
+vector* cmd_list;
 
+// Function to handle the SIGINT (CTRL + C)
 void sigint_exit(int sig);
 
 void sigint_exit(int sig) {
-    sigint_flag = sig;
+    // Useless, but to avoid a warning for "unused variable"
+    sig++;
+
+    // Free the command list
+    if(cmd_list)
+        vector_free(cmd_list);
+
+    printf("\n");
+
+    // Properly exit
+    exit(0);
 }
 
 
@@ -53,11 +64,7 @@ int main() {
     int copies;
     int parallel = false;
 
-    // The command list
-    vector* cmd_list = vector_init();
-
-    // Flag to handle CTRL + C
-    sigint_flag = 0;
+    cmd_list = vector_init();
 
     /* ------- */
     /* Signals */
@@ -112,7 +119,7 @@ int main() {
 
         /* 'memdump' command */
         else if(strcmp(arguments[0], "memdump") == 0) {
-            cmd_list = cmd_memdump(cmd_list);
+            cmd_memdump(cmd_list);
 
             // Don't pass through multiple copies
             continue;
@@ -120,7 +127,7 @@ int main() {
 
         /* 'loadmem' command */
         else if(strcmp(arguments[0], "loadmem") == 0) {
-            cmd_list = cmd_loadmem(cmd_list);
+            cmd_loadmem(cmd_list);
 
             // Don't pass through multiple copies
             continue;
@@ -166,9 +173,12 @@ int main() {
                 exec_parallel(arguments, cmd_list, copies);
             }
         }
-    } while(!sigint_flag);
+    } while(true);
 
+    // Theoretically, it will be never executed due to the
+    // 'while(true)' statement, but we can never be too
+    // careful...
     vector_free(cmd_list);
 
-    exit(0);
+    return 0;
 }

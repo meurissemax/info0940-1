@@ -80,6 +80,9 @@ vector* vector_init(void) {
  * @param 	capacity 	the new capacity of the vector
  */
 static void vector_resize(vector* v, int capacity) {
+	if(v == NULL || capacity < v->capacity)
+		return;
+
 	// We reallocate items of the vector
 	item** items = realloc(v->items, sizeof(item*) * capacity);
 
@@ -96,6 +99,9 @@ static void vector_resize(vector* v, int capacity) {
 }
 
 void vector_add(vector* v, char* command, pid_t pid, int exit_code) {
+	if(v == NULL || command == NULL)
+		return;
+
 	// If the vector is full, we double his capacity
 	if(v->capacity == v->total)
 		vector_resize(v, v->capacity * 2);
@@ -134,6 +140,9 @@ void vector_add(vector* v, char* command, pid_t pid, int exit_code) {
 }
 
 void vector_print(vector* v) {
+	if(v == NULL)
+		return;
+
 	// We check if there is elements in the vector
 	if(v->total > 0) {
 
@@ -150,87 +159,117 @@ void vector_print(vector* v) {
 	}
 }
 
-vector* vector_export(vector* v) {
+void vector_export(vector* v, char* path) {
+	if(v == NULL || path == NULL)
+		return;
+
 	int fd;
 
 	// We try to open the file
-	if((fd = open("memdump.bin", O_WRONLY | O_CREAT, S_IRWXU | S_IXGRP)) == -1) {
-		fprintf(stderr, "Unable to open the binary file.\n");
+	if((fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, S_IRWXU | S_IXGRP)) == -1) {
+		fprintf(stderr, "Unable to open '%s'.\n", path);
 
-		return v;
+		return;
 	}
 
 	// We write, at first, the number of elements in the vector
-	write(fd, &v->total, sizeof(v->total));
+	if(write(fd, &v->total, sizeof(v->total)) == -1)
+		return;
 
 	// We iterate over each element to write
 	for(int i = 0; i < v->total; i++) {
-		// We write the command and its length
 		int cmd_length = strlen(v->items[i]->command);
-		write(fd, &cmd_length, sizeof(cmd_length));
-		write(fd, v->items[i]->command, sizeof(char) * (cmd_length + 1));
 
-		// We write the pid and the exit code
-		write(fd, &v->items[i]->pid, sizeof(v->items[i]->pid));
-		write(fd, &v->items[i]->exit_code, sizeof(v->items[i]->exit_code));
+		if(write(fd, &cmd_length, sizeof(cmd_length)) == -1)
+			return;
+
+		if(write(fd, v->items[i]->command, sizeof(char) * (cmd_length + 1)) == -1)
+			return;
+
+		if(write(fd, &v->items[i]->pid, sizeof(v->items[i]->pid)) == -1)
+			return;
+
+		if(write(fd, &v->items[i]->exit_code, sizeof(v->items[i]->exit_code)) == -1)
+			return;
 	}
 
 	// We close the file
 	close(fd);
 
 	// We free the current vector and return a new (empty) vector
-	vector_free(v);
-
-	return vector_init();
+	vector_reset(v);
 }
 
-vector* vector_import(vector* v) {
+void vector_import(vector* v, char* path) {
+	if(v == NULL || path == NULL)
+		return;
+
 	int fd;
 
 	// We try to open the file
-	if((fd = open("memdump.bin", O_RDONLY)) == -1) {
-		fprintf(stderr, "Unable to read the binary file.\n");
+	if((fd = open(path, O_RDONLY)) == -1) {
+		fprintf(stderr, "Unable to read '%s'.\n", path);
 
-		return v;
+		return;
 	}
 
 	// We free the current vector
-	vector_free(v);
-
-	// We create a new vector
-	vector* imported_v = vector_init();
+	vector_reset(v);
 
 	// Number of elements in the vector
 	int total = 0;
-	read(fd, &total, sizeof(total));
+	
+	if(read(fd, &total, sizeof(total)) == -1)
+		return;
 
 	// We iterate over each element to import
 	for(int i = 0; i < total; i++) {
-		// We read the command length and the command
-		int cmd_length = 0;
-		read(fd, &cmd_length, sizeof(cmd_length));
-		char* command = malloc(sizeof(char) * (cmd_length + 1));
-		read(fd, command, sizeof(char) * (cmd_length + 1));
-
-		// We read the pid and the exit code
+		int cmd_length = 0, exit_code;
 		pid_t pid;
-		read(fd, &pid, sizeof(pid));
-		int exit_code;
-		read(fd, &exit_code, sizeof(exit_code));
 
-		// We add these elements in the vector
-		vector_add(imported_v, command, pid, exit_code);
+		if(read(fd, &cmd_length, sizeof(cmd_length)) == -1)
+			return;
+
+		char* command = malloc(sizeof(char) * (cmd_length + 1));
+
+		if(read(fd, command, sizeof(char) * (cmd_length + 1)) == -1)
+			return;
+		
+		if(read(fd, &pid, sizeof(pid)) == -1)
+			return;
+
+		if(read(fd, &exit_code, sizeof(exit_code)) == -1)
+			return;
+
+		vector_add(v, command, pid, exit_code);
 
 		free(command);
 	}
 
 	// We close the fil
 	close(fd);
+}
 
-	return imported_v;
+void vector_reset(vector* v) {
+	if(v == NULL)
+		return;
+
+	for(int i = 0; i < v->total; i++) {
+		free(v->items[i]->command);
+		free(v->items[i]);
+	}
+
+	free(v->items);
+
+	v->capacity = VECTOR_INIT_CAPACITY;
+	v->total = 0;
+	v->items = malloc(sizeof(item*) * v->capacity);
 }
 
 void vector_free(vector* v) {
+	if(v == NULL)
+		return;
+	
 	for(int i = 0; i < v->total; i++) {
 		free(v->items[i]->command);
 		free(v->items[i]);

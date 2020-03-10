@@ -29,10 +29,13 @@
 
 #include "headers/oshell.h"
 
-
 /*********************/
 /* General variables */
 /*********************/
+
+// The path to the file where command list
+// are exported
+char* export_path = "memdump.bin";
 
 // Flag to handle timeout
 int sigalrm_flag = 0;
@@ -76,12 +79,16 @@ void cmd_exit(char** arguments, vector* cmd_list) {
     if(arguments[1] != NULL)
         fprintf(stderr, "Arguments passed after the exit command have been discarded\n");
 
-    vector_free(cmd_list);
+    if(cmd_list)
+        vector_free(cmd_list);
 
     exit(0);
 }
 
 void cmd_cd(char** arguments) {
+    if(arguments == NULL)
+        return;
+
 	// Go to home directory
     if(arguments[1] == NULL || strcmp(arguments[1], "~") == 0) {
         chdir(getenv("HOME"));
@@ -93,34 +100,39 @@ void cmd_cd(char** arguments) {
     }
 
     // Go in a particular directory
-    else if((char) arguments[1][0] == '/') {
-        int v = chdir(arguments[1]);
-
-        if(v != 0) {
+    else if((char)arguments[1][0] == '/') {
+        if(chdir(arguments[1]) != 0) {
             fprintf(stderr, "Unknown directory, or unable to open it\n");
         }
     }
 
     // Go in a subdirectory
     else {
-        int v = chdir(arguments[1]);
-
-        if(v != 0) {
+        if(chdir(arguments[1]) != 0) {
             fprintf(stderr, "Unknown subdirectory, or unable to open it\n");
         }
     }
 }
 
 void cmd_showlist(vector* cmd_list) {
+    if(cmd_list == NULL)
+        return;
+
     vector_print(cmd_list);
 }
 
-vector* cmd_memdump(vector* cmd_list) {
-    return vector_export(cmd_list);
+void cmd_memdump(vector* cmd_list) {
+    if(cmd_list == NULL)
+        return;
+
+    vector_export(cmd_list, export_path);
 }
 
-vector* cmd_loadmem(vector* cmd_list) {
-    return vector_import(cmd_list);
+void cmd_loadmem(vector* cmd_list) {
+    if(cmd_list == NULL)
+        return;
+
+    vector_import(cmd_list, export_path);
 }
 
 /**
@@ -132,6 +144,9 @@ vector* cmd_loadmem(vector* cmd_list) {
  * @return  clean_str   the cleaned string
  */
 static char* remove_multiple_space(char* str) {
+    if(str == NULL)
+        return NULL;
+
     // We get the length of the input string
     size_t str_length = strlen(str);
 
@@ -202,7 +217,7 @@ static void cmd_sys_netstats() {
         fgets(buffer, 255, fptr);
 
     // We get and print the information, line by line
-    while(fgets(buffer, 255, fptr)) {
+    while(fgets(buffer, 255, fptr) != NULL) {
         // We clean the buffer (by removing multiple spaces)
         char* clean_buffer = remove_multiple_space(buffer);
 
@@ -253,12 +268,15 @@ static void cmd_sys_netstats() {
  * @return              a boolean indicating if 'filename'
  *                      is a symlink or not
  */
-static bool is_symlink(const char *filename) {
+static bool is_symlink(const char* filename) {
+    if(filename == NULL)
+        return true;
+
     struct stat p_statbuf;
 
     // We get file information
     if(lstat(filename, &p_statbuf) < 0) { 
-        perror("netstats : unbale to get file information\n");
+        fprintf(stderr, "netstats : unable to get file information\n");
 
         // We return 'true' to ignore the file by default
         // (because symlink are ignored in the program)
@@ -279,6 +297,9 @@ static bool is_symlink(const char *filename) {
  * @param   n_unsupported   the number of unsupported devices
  */
 static void get_device_info(char* base_path, int* n_active, int* n_suspended, int* n_unsupported) {
+    if(base_path == NULL || n_active == NULL || n_suspended == NULL || n_unsupported == NULL)
+        return;
+
     // We initialize variables
     char path[1000];
 
@@ -286,9 +307,8 @@ static void get_device_info(char* base_path, int* n_active, int* n_suspended, in
     struct dirent *dp;
 
     // We try to open the directory
-    if((dir = opendir(base_path)) == NULL) {
+    if((dir = opendir(base_path)) == NULL)
         return;
-    }
 
     // We iterate over each element of the directory
     while((dp = readdir(dir)) != NULL) {
@@ -307,7 +327,7 @@ static void get_device_info(char* base_path, int* n_active, int* n_suspended, in
 
                 // We try to open the file
                 if((fptr = fopen(path, "r")) == NULL) {
-                    fprintf(stderr, "Warning : unable to get device information\n");
+                    fprintf(stderr, "Unable to get device information\n");
 
                     return;
                 }
@@ -384,6 +404,9 @@ static char* get_state_details(char state) {
  *                      and its arguments ([1], [2], ..., [255]).
  */
 static void cmd_sys_stats(char** arguments) {
+    if(arguments == NULL)
+        return;
+    
     /* missing argument */
     if(arguments[2] == NULL) {
         fprintf(stderr, "Missing <pid>\n");
@@ -484,7 +507,7 @@ void exec_once(char** arguments, vector* cmd_list) {
 }
 
 static void sigalrm_handler(int sig) {
-    fprintf(stderr, "Process timeout\n");
+    fprintf(stderr, "Process %d timeout\n", sigalrm_pid);
 
     // We set the flag
     sigalrm_flag = sig;
@@ -499,14 +522,15 @@ void exec_sequential(char** arguments, vector* cmd_list, int number) {
 
         // If work has failed
         if(pid < 0) {
-            perror("Fork error");
+            fprintf(stderr, "Unable to create a child process\n");
         }
 
         // If we are in the child process
         else if (pid == 0) {
             // Execute the command
             if(execvp(arguments[0], arguments) < 0) {
-                perror("Execution error");
+                fprintf(stderr, "%s : command not found\n", arguments[0]);
+                vector_free(cmd_list);
                 exit(1);
             }
         } else {
@@ -539,14 +563,15 @@ void exec_parallel(char** arguments, vector* cmd_list, int number) {
 
         // If work has failed
         if(pid < 0) {
-            perror("Fork error");
+            fprintf(stderr, "Unable to create a child process\n");
         }
 
         // If we are in the child process
         else if(pid == 0) {
             // Execute the command
             if(execvp(arguments[0], arguments) < 0) {
-                perror("Execution error");
+                fprintf(stderr, "%s : command not found\n", arguments[0]);
+                vector_free(cmd_list);
                 exit(1);
             }
         }

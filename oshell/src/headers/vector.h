@@ -63,34 +63,39 @@ void vector_add(vector* v, char* command, pid_t pid, int exit_code);
  * Print the elements of a vector in stdout formatted as follow :
  * 		(command;pid;exit_code) -> ...
  *
- * @param v a pointer to a vector
+ * @param 	v 			a pointer to a vector
  */
 void vector_print(vector* v);
 
 /**
- * Write the content of a vector to a binary file and free
+ * Write the content of a vector to a binary file and reset
  * the vector.
  *
- * @param 	v 	a pointer to a vector
- *
- * @return 	a pointer to a free vector
+ * @param 	v 			a pointer to a vector
+ * @param 	path 		the path to the file
  */
-vector* vector_export(vector* v);
+void vector_export(vector* v, char* path);
 
 /**
  * Read the content of a binary file and load it (by replacing
  * all elements) in a vector.
  *
- * @param 	v 	a pointer to a vector
- *
- * @return 	a pointer to the new loaded vector
+ * @param 	v 			a pointer to a vector
+ * @param 	path 		the path to the file
  */
-vector* vector_import(vector* v);
+void vector_import(vector* v, char* path);
+
+/**
+ * Reset a vector and all its components.
+ *
+ * @param 	v 			a pointer to a vector
+ */
+void vector_reset(vector* v);
 
 /**
  * Free a vector and all its components.
  *
- * @param 	v 	a pointer to a vector
+ * @param 	v 			a pointer to a vector
  */
 void vector_free(vector *v);
 

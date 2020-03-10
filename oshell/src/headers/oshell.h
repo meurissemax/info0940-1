@@ -86,19 +86,15 @@ void cmd_showlist(vector* cmd_list);
  * Execute the built-in 'memdump' command.
  *
  * @param 	cmd_list 	a pointer to the command list
- *
- * @return 	a pointer to a vector
  */
-vector* cmd_memdump(vector* cmd_list);
+void cmd_memdump(vector* cmd_list);
 
 /**
  * Execute the built-in 'loadmem' command.
  *
  * @param 	cmd_list 	a pointer to the command list
- *
- * @return 	a pointer to a vector
  */
-vector* cmd_loadmem(vector* cmd_list);
+void cmd_loadmem(vector* cmd_list);
 
 /**
  * Execute the built-in 'sys' command.
