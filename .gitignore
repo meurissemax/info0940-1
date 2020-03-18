@@ -6,10 +6,17 @@
 .DS_Store
 
 
-########
-# Code #
-########
+##########
+# OShell #
+##########
 
 oshell/src/oshell
 oshell/src/memdump.bin
 oshell/src/oshell.dSYM/
+
+
+#######
+# KVS #
+#######
+
+kvs/**/info0940_project3_test.tar.gz
