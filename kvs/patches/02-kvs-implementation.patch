@@ -1,0 +1,198 @@
+From 47273ae4e1bfa674d8b2e953479c588af2586631 Mon Sep 17 00:00:00 2001
+From: student <valentin.vermeylen@student.uliege.be>
+Date: Tue, 21 Apr 2020 17:16:32 +0200
+Subject: [PATCH 2/2] Final comments, typedef and ptr checks
+
+Variable declarations at the beginning of blocks
+
+Comments and ifndef
+---
+ kvs/kvs.c | 45 +++++++++++++++++++++++++++++++++++++++------
+ kvs/kvs.h | 53 ++++++++++++++++++++++++++++++++++++++++++++++++++---
+ 2 files changed, 89 insertions(+), 9 deletions(-)
+
+diff --git a/kvs/kvs.c b/kvs/kvs.c
+index 261fe46..6079800 100644
+--- a/kvs/kvs.c
++++ b/kvs/kvs.c
+@@ -1,3 +1,13 @@
++/**
++ * INFO0940-1 - Operating systems
++ * University of Liege
++ * Academic year 2019-2020
++ *
++ * Group 1
++ * 20161278 - MEURISSE Maxime
++ * 20162864 - VERMEYLEN Valentin
++ */
++
+ #include <linux/slab.h>
+ #include <linux/kernel.h>
+ #include <linux/string.h>
+@@ -5,11 +15,24 @@
+ #include "kvs.h"
+ 
+ asmlinkage long kvs_insert(const char *key, size_t keylen, const char *val, size_t vallen){
+-    
++    // Variables declaration (C90 compliant).
++    Node* datastruct;
++    Node* addition;
++
++    // Check if key and val are allocated
++    if(!val){
++        printk("Insertion failed. The buffer 'val' was not allocated.\n");
++        return -1;
++    }
++    if(!key){
++        printk("Insertion failed. The key 'key' was not allocated.\n");
++        return -1;
++    }
++
+     // 1. The key already exists in the KVS. We only update its field.
+ 
+     // Create a Node to iterate the linked list.
+-    struct Node* datastruct = NULL;
++    datastruct = NULL;
+ 
+     // Iterate over all entries in the list.
+     list_for_each_entry(datastruct, &kvsHead, kvsList){
+@@ -23,9 +46,15 @@ asmlinkage long kvs_insert(const char *key, size_t keylen, const char *val, size
+             kfree(datastruct->val);
+             datastruct->val = (char*) kmalloc(vallen*sizeof(char), GFP_KERNEL);
+ 
+-            // The allocation failed
++            // The allocation failed. Delete the entry.
+             if(!datastruct->val){
+                 printk(KERN_ERR "Allocation of val failed.\n");
++                // Update the linked list
++                list_del(&datastruct->kvsList);
++
++                // free the Node
++                kfree(datastruct->key);
++                kfree(datastruct);
+                 return -1;
+             }
+ 
+@@ -37,7 +66,7 @@ asmlinkage long kvs_insert(const char *key, size_t keylen, const char *val, size
+ 
+     // 2. We have to create a new node
+ 
+-    struct Node* addition = (struct Node*) kmalloc(sizeof(struct Node),GFP_KERNEL);
++    addition = (Node*) kmalloc(sizeof(Node),GFP_KERNEL);
+ 
+     if(!addition){
+         printk(KERN_ERR "Unable to create the entry. Memory may be full.\n");
+@@ -79,6 +108,8 @@ asmlinkage long kvs_insert(const char *key, size_t keylen, const char *val, size
+ 
+ asmlinkage long kvs_search(const char *key, size_t keylen, char *val, size_t max_vallen) {
+ 
++    Node* datastruct;
++
+     if(!val){
+         printk("Search failed. The buffer 'val' was not allocated.\n");
+         return -1;
+@@ -89,7 +120,7 @@ asmlinkage long kvs_search(const char *key, size_t keylen, char *val, size_t max
+     }
+ 
+     // Create a Node to iterate the linked list.
+-    struct Node* datastruct = NULL;
++    datastruct = NULL;
+     
+     // Iterate over all entries in the list.
+     list_for_each_entry(datastruct, &kvsHead, kvsList){
+@@ -117,6 +148,8 @@ asmlinkage long kvs_search(const char *key, size_t keylen, char *val, size_t max
+ 
+ asmlinkage long kvs_delete(const char *key, size_t keylen) {
+ 
++    Node* datastruct;
++
+     // The pointer key is not allocated
+     if(! key){
+         printk(KERN_ERR "key pointer not allocated.\n");
+@@ -124,7 +157,7 @@ asmlinkage long kvs_delete(const char *key, size_t keylen) {
+     }
+ 
+     // Create a Node to iterate the linked list.
+-    struct Node* datastruct = NULL;
++    datastruct = NULL;
+     // Iterate over all entries in the list.
+     list_for_each_entry(datastruct, &kvsHead, kvsList){
+         // We find the key
+diff --git a/kvs/kvs.h b/kvs/kvs.h
+index 79d401c..2d9d9b8 100644
+--- a/kvs/kvs.h
++++ b/kvs/kvs.h
+@@ -1,19 +1,66 @@
++/**
++ * INFO0940-1 - Operating systems
++ * University of Liege
++ * Academic year 2019-2020
++ *
++ * Group 1
++ * 20161278 - MEURISSE Maxime
++ * 20162864 - VERMEYLEN Valentin
++ */
++
++#ifndef kvs_h
++#define kvs_h
++
+ #include <linux/list.h> 
+ 
++// Pointer to the head of the linked list
+ static LIST_HEAD(kvsHead);
+ 
+-struct Node {
++// Structure defining a node in the linked list, containing an entry of the KVS
++typedef struct Node {
+     char* key;
+     char* val;
+     size_t keylen;
+     size_t vallen;
+ 
+     struct list_head kvsList;
+-};
+-
++} Node;
+ 
++/**
++ * Inserts an entry in the KVS.
++ *
++ * @param 	key 		pointer to a key string to be stored.
++ * @param 	keylen  	length of the key string.
++ * @param   val         pointer to a value string to be stored.
++ * @param   vallen      length of the value string.
++ * 
++ * @return  0 on success, -1 on failure.						
++ */
+ asmlinkage long kvs_insert(const char *key, size_t keylen, const char *val, size_t vallen);
+ 
++/**
++ * Searches for an entry in the KVS.
++ *
++ * @param 	key 		pointer to a key string to be searched.
++ * @param 	keylen  	length of the key string.
++ * @param   val         pointer to a buffer to receive the result value.
++ * @param   vallen      size of the 'val' buffer
++ * 
++ * @return  1 if a value is found for a specified key, 0 if not, -1 on failure.
++ * 
++ * NB : If the buffer is not big enough to receive the value, -1 is returned.		
++ */
+ asmlinkage long kvs_search(const char *key, size_t keylen, char *val, size_t max_vallen);
+ 
++/**
++ * Deletes an entry in the KVS.
++ *
++ * @param 	key 		pointer to a key string to be deleted.
++ * @param 	keylen  	length of the key string.
++ * 
++ * @return  0 on success (deletion or nothing found for the given key),
++ *          -1 on failure.						
++ */
+ asmlinkage long kvs_delete(const char *key, size_t keylen);
++
++#endif
+\ No newline at end of file
+-- 
+2.7.4
+
