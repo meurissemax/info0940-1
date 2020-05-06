@@ -57,7 +57,7 @@
     
     \section{Implementation}
     
-    The fork system call is not implemented in \emph{sys\_call} any longer. It actually calls the \emph{clone} function (a system call to create a new thread) which itself calls the \emph{do\_fork} function that does the work of creating a new process. The latter is the actual implementation of the fork operation. It calls the function \emph{copy\_process} which performs all the main operations to create the new process.
+    The fork system call is not implemented in \emph{sys\_call} any longer. It actually calls the \emph{clone} function (a system call to create a new thread) which itself calls the \emph{\_do\_fork} function that does the work of creating a new process. The latter is the actual implementation of the fork operation. It calls the function \emph{copy\_process} which performs all the main operations to create the new process.
     
     \subsection{Main operations}
     
@@ -78,7 +78,7 @@
         
         \item \emph{End of copy\_process} : once the task structure has been allocated and correctly filled, a return stack is allocated to the newly created task. The function then goes to set all fields of the newly created structure appropriately and returns to the caller a pointer to the newly created child.
         
-        \item \emph{Coming back to do\_fork} : finally, after checks to see if the new thread pointer is not invalid, the process is awoken.
+        \item \emph{Coming back to \_do\_fork} : finally, after checks to see if the new thread pointer is not invalid, the process is awoken.
     \end{enumerate}
     
     It is in step \ref{memory.step} that the main elements of the child process are allocated and copied from the parent process. The different memory management mechanisms are presented in the next section.
@@ -103,7 +103,7 @@
     
     It can be implemented efficiently by using the page table : the pages of memory of the parent process are marked as read-only and the kernel keeps a count of the number of references to the page.
     
-    If both processes only read, they work with shared memory, but when a process (parent or child) tries to write to one of these pages, it creates a \emph{page fault} which is intercepted by the kernel trap handler. The latter then creates a new physical page (except if there is only one reference to this page), change the permission in \emph{read-write}, updates the page table, decrements the number of references and returns the \emph{Program Counter} (PC) to the previous statement. The latter is then re-run and the writing in memory (on the newly created page) can be done.
+    If both processes only read, they work with shared memory, but when a process (parent or child) tries to write to one of these pages, it creates a \emph{page fault} which is intercepted by the kernel trap handler. The latter then creates a new physical page (except if there is only one reference to this page), changes the permission in \emph{read-write}, updates the page table, decrements the number of references and returns the \emph{Program Counter} (PC) to the previous statement. The latter is then re-run and the writing in memory (on the newly created page) can be done.
     
     Thanks to this new allocated page, a change made in one process will not be visible in another.
     
@@ -115,7 +115,7 @@
     
     \subsection{File descriptor}
     
-    As mentioned in step \ref{memory.step} of the implementation, process descriptors are cleared and set to initial values. However, the file descriptor of the parent is not duplicated when the child process is created. This implies that resources can be shared between the different processes. Some anonymous objects (pipes, shared memory, etc.) can only be shared through this mecanism.
+    As mentioned in step \ref{memory.step} of the implementation, process descriptors are cleared and set to initial values. However, the file descriptor of the parent is not duplicated when the child process is created. This implies that resources can be shared between the different processes. Some anonymous objects (pipes, shared memory, etc.) can only be shared through this mechanism.
     
     % ----- Appendix ----- %
     
