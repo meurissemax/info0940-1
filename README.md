@@ -10,3 +10,9 @@ Projects realized as part of the *Operating systems* course given by Professor *
 
 * **Maxime Meurisse** - [meurissemax](https://github.com/meurissemax)
 * **Valentin Vermeylen** - [ValentinVermeylen](https://github.com/ValentinVermeylen)
+
+## Scores
+
+* Project 1 (OShell) received a score of **20/20**.
+* Project 2 (OShell version 2) received a score of **20/20**.
+* Project 3 (KVS in the kernel) received a score of **20/20**.
